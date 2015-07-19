@@ -26,7 +26,7 @@ head(A)
 A <- data.frame(A)
 options(warn = -1)
 require(RColorBrewer)
-library(lattice)
+library(ggplot2)
 ```
 ## II What is the mean total number of steps taken per day?
 
@@ -58,23 +58,24 @@ median(AMOD)
 ## III What is the average daily activity pattern?
 ### 3.1 Make a time series plot of the 5-minute interval and the average number of steps taken
 
-```{r}
+```{r 3.1-Average Daily Activity Pattern}
 BMOD <- tapply(A$steps, A$interval, mean, na.rm = TRUE)
-plot(BMOD, type ="l", , main = "Avg steps across 5-minute intervals", xlab = "Interval Seq Number", ylab = "Avg. number of steps")
+BMODName <- as.numeric(names(BMOD))
+plot(BMODName, BMOD, type = "l", , main = "Avg steps across 5-minute intervals", xlab = "5-min Intervals", ylab = "Avg. number of steps")
 ```
 ```{r phantom 2, echo = FALSE}
 
 ```
 ### 3.2 Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 | On average the maximum number of steps is `r round(max(BMOD))`. 
-| The five minute interval number that contains the maximum number of steps is `r which(grepl(max(BMOD), BMOD))` th of the 288 total intervals.
-| This corresponds to  `r (which(grepl(max(BMOD), BMOD))-1) * 5` minutes into the day. An inference is majority of the people going to work at 8:30 a.m. in the morning.
-
-
+| The five minute interval number that contains the maximum number of steps is `r which(grepl(max(BMOD), BMOD))` th of the 288 total intervals. The interval is:
+```{r 3.2 Interval}
+names(BMOD)[which(grepl(max(BMOD), BMOD))]
+```
 ## IV Imputing missing values
 ### 4.1 Calculate and report the total number of missing values in the dataset 
 | The total number of missing values is `r summary(A)[7,1]`.
-```{r}
+```{r Number of Missing Values}
 summary(A)
 ```
 ### 4.2 Devise a strategy for filling in all of the missing values in the dataset.
@@ -105,7 +106,7 @@ hist( IAMOD, breaks = 10, labels = TRUE, ylim = c(0, 20), xlim = c(0, 25000), ma
 
 ```
 ### 4.4 (b) Calculate and report the mean and median of total number of steps taken per day
-```{r}
+```{r 4.4 (b) Mean and Median}
 mean(IAMOD)
 median(IAMOD)
 ```
@@ -118,7 +119,7 @@ median(IAMOD)
 ## V Weekdays and weekends activity patterns
 ### 5.1 Create a new factor variable for weekdays and weekends
 | Use ifelse function to compute a vector of weekday/weekend. Column bind this vector to NEWA dataset.
-```{r}
+```{r 5.1 - New factor variable}
 day <- weekdays(as.Date(NEWA$date))
 type <- ifelse(day %in% c("Saturday", "Sunday"), "weekend", "weekday")
 M1 <- cbind(NEWA, type)
@@ -126,39 +127,18 @@ str(M1)
 head(M1)
 ```
 ### 5.2 Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
-| Subset data in M1 by weekend and weekday.
-```{r}
-M1WDAY <- subset(M1, type == "weekday")
-head(M1WDAY)
-M1WEND <- subset(M1, type == "weekend")
-head(M1WEND)
-```
-| Use tapply to create sums by interval for each of the above subsets,
-| Use base plot function with type = l to create time series plots.
-```{r fig.height = 10}
-par(mfrow = c(2,1))
-WDAYMOD <- tapply(M1WDAY$I.steps, M1WDAY$interval, mean)
-plot(WDAYMOD, type ="l", main = "Weekday - Avg steps across 5-minute intervals", xlab = "Interval Seq Number", ylab = "Avg. number of steps")
-WENDMOD <- tapply(M1WEND$I.steps, M1WEND$interval, mean)
-plot(WENDMOD, type ="l", main = "Weekend - Avg steps across 5-minute intervals", xlab = "Interval Seq Number", ylab = "Avg. number of steps")
+```{r - 5.2 - Create Weekday weekend subsets}
+aggdata <- aggregate(M1$I.steps, by=list(M1$interval, M1$type), FUN=mean)
+B <- data.frame(aggdata)
+names(B)[1] <- "interval"
+names(B)[2] <- "week"
+names(B)[3] <- "steps"
+
+g <- ggplot(B, aes(interval, steps))
+g + geom_line(aes(colour=steps)) + facet_grid(week ~ . )
 ```
 ```{r phantom 4, echo = FALSE}
 
 ```
-| OBSERVATION:
-| WEEKDAYS:
-| The five minute interval number that contains the maximum number of steps is `r which(grepl(max(WDAYMOD), WDAYMOD))` th of the 288 total intervals. This corresponds to  `r (which(grepl(max(WDAYMOD), WDAYMOD))-1) * 5` minutes past the hour. An inference from this data is that most people reach work place by 8:30 a.m.
-|
-| WEEKENDS:
-| On weekends we see several maximums all scross the day. This shows folks are active all day during the weekend.
-|
-| NOTES:
-| Please note - I attempted this with lattice panel. The plot with lattice has noise.
-```{r fig.height = 6}
-#M2 <- transform(M1, type = factor(type))
-xyplot(I.steps ~ interval | type, data = M1, type = "l", layout= c(1,2))
-```
-```{r phantom 5, echo = FALSE}
 
-```
 
