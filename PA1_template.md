@@ -1,6 +1,11 @@
-# Reproducible Research - Project 1
-Mala Viswanath  
-Friday, July 17, 2015  
+---
+title: "Reproducible Research - Project 1"
+author: "Mala Viswanath"
+date: "Friday, July 17, 2015"
+output: 
+   html_document:
+    keep_md: yes
+---
 ## I Loading and preprocessing the data
 
 ### 1.1 Load the data
@@ -53,7 +58,7 @@ require(RColorBrewer)
 ```
 
 ```r
-library(lattice)
+library(ggplot2)
 ```
 ## II What is the mean total number of steps taken per day?
 
@@ -76,7 +81,7 @@ head (AMOD)
 hist( AMOD, breaks = 10, lables = TRUE, ylim = c(0, 20), xlim = c(0, 25000), main="Histogram of # of steps per day", xlab="Number of Steps per day ", col = brewer.pal(5, "Set2"))
 ```
 
-![](PA1_template_files/figure-html/histogram_2.3-1.png) 
+![plot of chunk histogram_2.3](figure/histogram_2.3-1.png) 
 
 
 ###2.3 Calculate and report the mean and median of the total number of steps taken per day 
@@ -106,17 +111,23 @@ median(AMOD)
 
 ```r
 BMOD <- tapply(A$steps, A$interval, mean, na.rm = TRUE)
-plot(BMOD, type ="l", , main = "Avg steps across 5-minute intervals", xlab = "Interval Seq Number", ylab = "Avg. number of steps")
+BMODName <- as.numeric(names(BMOD))
+plot(BMODName, BMOD, type = "l", , main = "Avg steps across 5-minute intervals", xlab = "5-min Intervals", ylab = "Avg. number of steps")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+![plot of chunk 3.1-Average Daily Activity Pattern](figure/3.1-Average Daily Activity Pattern-1.png) 
 
 ### 3.2 Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 | On average the maximum number of steps is 206. 
-| The five minute interval number that contains the maximum number of steps is 104 th of the 288 total intervals.
-| This corresponds to  515 minutes into the day. An inference is majority of the people going to work at 8:30 a.m. in the morning.
+| The five minute interval number that contains the maximum number of steps is 104 th of the 288 total intervals. The interval is:
 
+```r
+names(BMOD)[which(grepl(max(BMOD), BMOD))]
+```
 
+```
+## [1] "835"
+```
 ## IV Imputing missing values
 ### 4.1 Calculate and report the total number of missing values in the dataset 
 | The total number of missing values is NA's   :2304  .
@@ -170,7 +181,7 @@ IAMOD <- tapply(NEWA$I.steps, NEWA$date, sum)
 hist( IAMOD, breaks = 10, labels = TRUE, ylim = c(0, 20), xlim = c(0, 25000), main="Histogram of # of steps per day", xlab="Number of Steps per day ", col = brewer.pal(5, "Set2"))
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png) 
 
 ### 4.4 (b) Calculate and report the mean and median of total number of steps taken per day
 
@@ -189,8 +200,8 @@ median(IAMOD)
 ```
 ## [1] 10766.19
 ```
-| Mean of the total number of imputed steps taken per day is 1.076619\times 10^{4}
-| Median of the total number of imputed steps taken per day is 1.0766189\times 10^{4}
+| Mean of the total number of imputed steps taken per day is 1.076619 &times; 10<sup>4</sup>
+| Median of the total number of imputed steps taken per day is 1.0766189 &times; 10<sup>4</sup>
 |
 | The difference between the means (total steps, total imputed steps) is -1411.96
 | The difference between the medians (total steps, total imputed steps) is -371.1886792
@@ -228,65 +239,19 @@ head(M1)
 ## 6 2.0943396 2012-10-01       25 weekday
 ```
 ### 5.2 Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
-| Subset data in M1 by weekend and weekday.
 
 ```r
-M1WDAY <- subset(M1, type == "weekday")
-head(M1WDAY)
+aggdata <- aggregate(M1$I.steps, by=list(M1$interval, M1$type), FUN=mean)
+B <- data.frame(aggdata)
+names(B)[1] <- "interval"
+names(B)[2] <- "week"
+names(B)[3] <- "steps"
+
+g <- ggplot(B, aes(interval, steps))
+g + geom_line(aes(colour=steps)) + facet_grid(week ~ . )
 ```
 
-```
-##     I.steps       date interval    type
-## 1 1.7169811 2012-10-01        0 weekday
-## 2 0.3396226 2012-10-01        5 weekday
-## 3 0.1320755 2012-10-01       10 weekday
-## 4 0.1509434 2012-10-01       15 weekday
-## 5 0.0754717 2012-10-01       20 weekday
-## 6 2.0943396 2012-10-01       25 weekday
-```
+![plot of chunk - 5.2 - Create Weekday weekend subsets](figure/- 5.2 - Create Weekday weekend subsets-1.png) 
 
-```r
-M1WEND <- subset(M1, type == "weekend")
-head(M1WEND)
-```
-
-```
-##      I.steps       date interval    type
-## 1441       0 2012-10-06        0 weekend
-## 1442       0 2012-10-06        5 weekend
-## 1443       0 2012-10-06       10 weekend
-## 1444       0 2012-10-06       15 weekend
-## 1445       0 2012-10-06       20 weekend
-## 1446       0 2012-10-06       25 weekend
-```
-| Use tapply to create sums by interval for each of the above subsets,
-| Use base plot function with type = l to create time series plots.
-
-```r
-par(mfrow = c(2,1))
-WDAYMOD <- tapply(M1WDAY$I.steps, M1WDAY$interval, mean)
-plot(WDAYMOD, type ="l", main = "Weekday - Avg steps across 5-minute intervals", xlab = "Interval Seq Number", ylab = "Avg. number of steps")
-WENDMOD <- tapply(M1WEND$I.steps, M1WEND$interval, mean)
-plot(WENDMOD, type ="l", main = "Weekend - Avg steps across 5-minute intervals", xlab = "Interval Seq Number", ylab = "Avg. number of steps")
-```
-
-![](PA1_template_files/figure-html/unnamed-chunk-13-1.png) 
-
-| OBSERVATION:
-| WEEKDAYS:
-| The five minute interval number that contains the maximum number of steps is 104 th of the 288 total intervals. This corresponds to  515 minutes past the hour. An inference from this data is that most people reach work place by 8:30 a.m.
-|
-| WEEKENDS:
-| On weekends we see several maximums all scross the day. This shows folks are active all day during the weekend.
-|
-| NOTES:
-| Please note - I attempted this with lattice panel. The plot with lattice has noise.
-
-```r
-#M2 <- transform(M1, type = factor(type))
-xyplot(I.steps ~ interval | type, data = M1, type = "l", layout= c(1,2))
-```
-
-![](PA1_template_files/figure-html/unnamed-chunk-14-1.png) 
 
 
